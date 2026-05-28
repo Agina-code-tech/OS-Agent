@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { SectionCard } from "./components/SectionCard.jsx";
 import {
   buildHistorySummary,
   formatGuideText,
@@ -90,6 +89,10 @@ export default function App() {
   const [history, setHistory] = useState(() => initialHistory);
   const [selectedId, setSelectedId] = useState(() => initialHistory[0]?.id ?? null);
   const [currentEntry, setCurrentEntry] = useState(() => initialHistory[0] ?? null);
+  const [profileName, setProfileName] = useState(() => {
+    if (typeof window === "undefined") return "Cosmic User";
+    return window.localStorage.getItem("daily-cosmic-profile") || "Cosmic User";
+  });
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("Ready.");
   const [error, setError] = useState("");
@@ -97,6 +100,11 @@ export default function App() {
   useEffect(() => {
     saveHistory(history);
   }, [history]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("daily-cosmic-profile", profileName);
+  }, [profileName]);
 
   useEffect(() => {
     const selected = history.find((item) => item.id === selectedId) ?? history[0] ?? null;
@@ -174,168 +182,177 @@ export default function App() {
   }
 
   const guide = selectedHistory?.guide;
+  const avatarLetter = (profileName?.trim()?.[0] || "C").toUpperCase();
 
   return (
     <div className="app-shell">
       <div className="ambient ambient-a" />
       <div className="ambient ambient-b" />
 
-      <header className="hero-shell">
-        <div className="hero-copy">
-          <MascotMark />
-          <p className="eyebrow centered">Daily Astrology OS</p>
-          <h1>LLM-backed daily guidance with saved history.</h1>
-          <p className="hero-subtitle">
-            A practical daily operating system that turns a date into centered, usable direction.
-          </p>
-          <p className="hero-subtext">
-            Pick a day, generate a reading, save it locally, and copy the full guide whenever you need it.
-          </p>
+      <header className="profile-strip" aria-label="profile">
+        <div className="profile-chip">
+          <div className="profile-avatar" aria-hidden="true">
+            <span>{avatarLetter}</span>
+          </div>
+          <div className="profile-copy">
+            <span className="profile-label">Private console</span>
+            <span className="profile-name">{profileName}</span>
+          </div>
         </div>
       </header>
 
-      <main className="dashboard-shell">
-        <section className="control-panel panel">
-          <div className="control-row">
-            <label className="field">
-              <span>Date selector</span>
-              <input
-                type="date"
-                value={date}
-                onChange={(event) => setDate(event.target.value)}
-              />
-            </label>
-
-            <div className="button-stack">
-              <button type="button" onClick={() => generateGuide(date)} disabled={loading}>
-                {loading ? "Generating..." : "Generate guide"}
-              </button>
-              <button
-                type="button"
-                className="secondary"
-                onClick={() => {
-                  const today = getLocalDateValue();
-                  setDate(today);
-                  void generateGuide(today);
-                }}
-                disabled={loading}
-              >
-                Today
-              </button>
-              <button type="button" className="secondary" onClick={copyGuide} disabled={!guide}>
-                Copy text
-              </button>
+      <main className="canvas-shell">
+        <section className="master-panel">
+          <header className="master-panel-header">
+            <div className="master-title-block">
+              <p className="panel-title">Daily Cosmic Guidance</p>
             </div>
-          </div>
 
-          <div className="status-bar">
-            <span className="status-dot" aria-hidden="true" />
-            <p>{error || status}</p>
-          </div>
-        </section>
+            <div className="master-actions">
+              <label className="field compact-field">
+                <span>Date selector</span>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(event) => setDate(event.target.value)}
+                />
+              </label>
 
-        <section className="dashboard-grid">
-          <div className="guide-stack">
-            <SectionCard title="Daily Snapshot" kicker="SECTION 1">
-              <p className="snapshot-line">{guide?.snapshot ?? "No guide generated yet."}</p>
-            </SectionCard>
-
-            <SectionCard title="Dominant Mode" kicker="SECTION 2">
-              <div className="mode-block">
-                <strong>{guide?.dominantMode.label ?? "..."}</strong>
-                <p>{guide?.dominantMode.reason ?? "Generate a guide to see the daily mode."}</p>
+              <div className="button-stack master-button-stack">
+                <button type="button" onClick={() => generateGuide(date)} disabled={loading}>
+                  {loading ? "Generating..." : "Generate"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    const today = getLocalDateValue();
+                    setDate(today);
+                    void generateGuide(today);
+                  }}
+                  disabled={loading}
+                >
+                  Today
+                </button>
+                <button type="button" className="secondary" onClick={copyGuide} disabled={!guide}>
+                  Copy
+                </button>
               </div>
-            </SectionCard>
+            </div>
+          </header>
 
-            <SectionCard title="3 Actions" kicker="SECTION 3">
-              <div className="action-list">
-                <article>
-                  <span>BODY</span>
-                  <p>{guide?.actions.body ?? "Generate a guide to see the body action."}</p>
+          <div className="master-panel-body">
+            <section className="feed-zone" aria-label="daily guidance">
+              <div className="feed-stream">
+                <article className="feed-row">
+                  <span className="feed-label">Snapshot</span>
+                  <p className="feed-value">{guide?.snapshot ?? "No guide generated yet."}</p>
                 </article>
-                <article>
-                  <span>MIND</span>
-                  <p>{guide?.actions.mind ?? "Generate a guide to see the mind action."}</p>
+
+                <article className="feed-row">
+                  <span className="feed-label">Dominant Mode</span>
+                  <p className="feed-value">
+                    {guide?.dominantMode
+                      ? `${guide.dominantMode.label}. ${guide.dominantMode.reason}`
+                      : "Generate a guide to see the daily mode."}
+                  </p>
                 </article>
-                <article>
-                  <span>LIFE</span>
-                  <p>{guide?.actions.life ?? "Generate a guide to see the life action."}</p>
+
+                <article className="feed-row">
+                  <span className="feed-label">Actions</span>
+                  <div className="action-line">
+                    <p>{guide?.actions?.mind ?? "MIND: Review the next three tasks in order."}</p>
+                    <p>{guide?.actions?.body ?? "BODY: Practice slow breathing for 3 minutes."}</p>
+                    <p>{guide?.actions?.life ?? "LIFE: Make one concrete decision today."}</p>
+                  </div>
                 </article>
+
+                <article className="feed-row">
+                  <span className="feed-label">Shadow Prompts</span>
+                  <ul className="prompt-stream">
+                    {guide?.shadowPrompts?.map((item) => (
+                      <li key={item.label}>
+                        <strong>{item.label}:</strong> <span>{item.prompt}</span>
+                      </li>
+                    )) ?? <li>Generate a guide to unlock the prompts.</li>}
+                  </ul>
+                </article>
+
+                <article className="feed-row">
+                  <span className="feed-label">Warning Pattern</span>
+                  <div className="warning-inline">
+                    <p>
+                      <strong>Likely today:</strong> {guide?.warning?.likelyToday ?? "..."}
+                    </p>
+                    <p>
+                      <strong>Correction:</strong>{" "}
+                      {guide?.warning?.correction ?? "Generate a guide to see the correction."}
+                    </p>
+                  </div>
+                </article>
+
+                <article className="feed-row">
+                  <span className="feed-label">Today&apos;s Rule</span>
+                  <p className="feed-value">{guide?.todayRule ?? "Generate a guide to see today's rule."}</p>
+                </article>
+
+                <div className="status-bar status-bar-inline">
+                  <span className="status-dot" aria-hidden="true" />
+                  <p>{error || status}</p>
+                </div>
               </div>
-            </SectionCard>
+            </section>
 
-            <SectionCard title="Shadow Prompts" kicker="SECTION 4">
-              <ol className="shadow-list">
-                {guide?.shadowPrompts?.map((item) => (
-                  <li key={item.label}>
-                    <strong>{item.label}:</strong> <span>{item.prompt}</span>
-                  </li>
-                )) ?? <li>Generate a guide to unlock the prompts.</li>}
-              </ol>
-            </SectionCard>
-
-            <SectionCard title="Warning Pattern" kicker="SECTION 5">
-              <div className="warning-grid">
+            <aside className="history-panel">
+              <div className="history-head compact">
                 <div>
-                  <span>LIKELY TODAY</span>
-                  <p>{guide?.warning.likelyToday ?? "..."}</p>
+                  <p className="section-kicker">Historical Logs</p>
+                  <h2>Historical Logs</h2>
                 </div>
-                <div>
-                  <span>CORRECTION</span>
-                  <p>{guide?.warning.correction ?? "Generate a guide to see the correction."}</p>
-                </div>
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={clearHistory}
+                  disabled={!history.length}
+                >
+                  Clear
+                </button>
               </div>
-            </SectionCard>
 
-            <SectionCard title="Today's Rule" kicker="SECTION 6">
-              <p className="rule-block">{guide?.todayRule ?? "Generate a guide to see today's rule."}</p>
-            </SectionCard>
+              <div className="history-list">
+                {history.length ? (
+                  history.map((entry) => (
+                    <button
+                      type="button"
+                      key={entry.id}
+                      className={`history-item ${entry.id === selectedId ? "active" : ""}`}
+                      onClick={() => setSelectedId(entry.id)}
+                    >
+                      <div className="history-item-top">
+                        <strong>{entry.date}</strong>
+                        <span className={`badge badge-${entry.source}`}>{entry.source}</span>
+                      </div>
+                      <p>{getPreview(entry.guide)}</p>
+                      <small>{formatGeneratedAt(entry.generatedAt)}</small>
+                    </button>
+                  ))
+                ) : (
+                  <div className="empty-state">
+                    <p>No saved history yet.</p>
+                    <span>Your first generated reading will appear here and stay on this device.</span>
+                  </div>
+                )}
+              </div>
+
+              {selectedHistory ? (
+                <div className="history-footer">
+                  <p>Current selection</p>
+                  <strong>{selectedHistory.date}</strong>
+                  <span>{selectedHistory.summary}</span>
+                </div>
+              ) : null}
+            </aside>
           </div>
-
-          <aside className="history-panel panel">
-            <div className="history-head">
-              <div>
-                <p className="section-kicker">HISTORY</p>
-                <h2>Saved readings</h2>
-              </div>
-              <button type="button" className="secondary" onClick={clearHistory} disabled={!history.length}>
-                Clear
-              </button>
-            </div>
-
-            <div className="history-list">
-              {history.length ? (
-                history.map((entry) => (
-                  <button
-                    type="button"
-                    key={entry.id}
-                    className={`history-item ${entry.id === selectedId ? "active" : ""}`}
-                    onClick={() => setSelectedId(entry.id)}
-                  >
-                    <div className="history-item-top">
-                      <strong>{entry.date}</strong>
-                      <span className={`badge badge-${entry.source}`}>{entry.source}</span>
-                    </div>
-                    <p>{getPreview(entry.guide)}</p>
-                    <small>{formatGeneratedAt(entry.generatedAt)}</small>
-                  </button>
-                ))
-              ) : (
-                <div className="empty-state">
-                  <p>No saved history yet.</p>
-                  <span>Your first generated reading will appear here and stay on this device.</span>
-                </div>
-              )}
-            </div>
-
-            {selectedHistory ? (
-              <div className="history-footer">
-                <p>Current selection</p>
-                <strong>{selectedHistory.date}</strong>
-                <span>{selectedHistory.summary}</span>
-              </div>
-            ) : null}
-          </aside>
         </section>
       </main>
     </div>
