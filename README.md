@@ -1,6 +1,6 @@
-# OS-Agent
+# Daily Astrology OS
 
-Daily Astrology OS is a React + Vite desktop-style app that turns a date into a practical daily operating system using tropical astrology, somatic psychology, behavior design, and shadow-work prompts.
+A React + Vite desktop-style app that turns a date into a practical daily operating system using tropical astrology, somatic psychology, behavior design, and shadow-work prompts.
 
 ## What it does
 

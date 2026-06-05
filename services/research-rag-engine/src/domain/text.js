@@ -1,0 +1,86 @@
+import crypto from "node:crypto";
+
+export function normalizeText(value = "") {
+  return String(value)
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+export function splitSentences(text = "") {
+  return normalizeText(text)
+    .split(/(?<=[.!?])\s+|\n+/g)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+export function tokenise(value = "") {
+  return String(value)
+    .toLowerCase()
+    .match(/[a-z0-9']+/g) ?? [];
+}
+
+export function stableHash(value = "") {
+  return crypto.createHash("sha256").update(String(value)).digest("hex");
+}
+
+export function stableId(prefix, ...parts) {
+  return `${prefix}_${stableHash(parts.join("|")).slice(0, 20)}`;
+}
+
+export function truncate(value = "", length = 180) {
+  const text = String(value).trim();
+  return text.length <= length ? text : `${text.slice(0, Math.max(0, length - 3)).trimEnd()}...`;
+}
+
+export function uniqueBy(items, keyFn) {
+  const seen = new Set();
+  const output = [];
+  for (const item of items) {
+    const key = keyFn(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    output.push(item);
+  }
+  return output;
+}
+
+export function average(values = []) {
+  const filtered = values.filter((value) => Number.isFinite(value));
+  if (!filtered.length) return 0;
+  return filtered.reduce((sum, value) => sum + value, 0) / filtered.length;
+}
+
+export function cosineSimilarity(a = [], b = []) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length || !a.length) return 0;
+  let dot = 0;
+  let magA = 0;
+  let magB = 0;
+  for (let index = 0; index < a.length; index += 1) {
+    dot += a[index] * b[index];
+    magA += a[index] ** 2;
+    magB += b[index] ** 2;
+  }
+  const denominator = Math.sqrt(magA) * Math.sqrt(magB);
+  return denominator ? dot / denominator : 0;
+}
+
+export function linearTrend(points = []) {
+  const filtered = points
+    .map((point, index) => ({ x: index, y: Number(point) }))
+    .filter((point) => Number.isFinite(point.y));
+  if (filtered.length < 2) return 0;
+  const n = filtered.length;
+  const sumX = filtered.reduce((sum, point) => sum + point.x, 0);
+  const sumY = filtered.reduce((sum, point) => sum + point.y, 0);
+  const sumXY = filtered.reduce((sum, point) => sum + point.x * point.y, 0);
+  const sumXX = filtered.reduce((sum, point) => sum + point.x * point.x, 0);
+  const denominator = n * sumXX - sumX * sumX;
+  if (!denominator) return 0;
+  return (n * sumXY - sumX * sumY) / denominator;
+}
+
+export function wordCount(value = "") {
+  return tokenise(value).length;
+}

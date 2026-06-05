@@ -3,6 +3,8 @@ dist
 .npm-cache
 dev.log
 dev.err
+memory.log
+memory.err
 .env
 .env.local
 .vercel
